@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Lightweight CRM for tracking Cloud Endpoint Practice opportunities. Static site — data is stored in your browser.">
+  <title>Cloud Endpoint Practice — CRM</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💠</text></svg>">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">💠</span>
+      <div class="brand-text">
+        <strong>Cloud Endpoint Practice</strong>
+        <span>Opportunity CRM</span>
+      </div>
+    </div>
+
+    <nav class="tabs" aria-label="Main navigation">
+      <button class="tab is-active" data-nav="dashboard">Dashboard</button>
+      <button class="tab" data-nav="list">Opportunities</button>
+    </nav>
+
+    <div class="header-actions">
+      <button class="btn ghost" id="btn-import" title="Import a JSON backup">Import</button>
+      <input type="file" id="file-import" accept="application/json,.json" hidden>
+      <button class="btn ghost" id="btn-export-json" title="Download all data as JSON">Export</button>
+      <button class="btn primary" id="btn-new">＋ New opportunity</button>
+      <button class="btn icon" id="btn-theme" title="Toggle light / dark theme" aria-label="Toggle theme">◐</button>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ============ DASHBOARD ============ -->
+    <section id="view-dashboard" class="view">
+      <div id="stat-tiles" class="tile-row"></div>
+
+      <div class="dash-grid">
+        <div class="card">
+          <h2 class="card-title">Pipeline by stage</h2>
+          <div id="stage-bars" class="stage-bars"></div>
+        </div>
+
+        <div class="card">
+          <h2 class="card-title">Upcoming actions</h2>
+          <div id="upcoming-actions"></div>
+        </div>
+
+        <div class="card">
+          <h2 class="card-title">Open risks &amp; blockers</h2>
+          <div id="open-risks"></div>
+        </div>
+      </div>
+
+      <div id="dashboard-empty" class="empty-state" hidden>
+        <p><strong>No opportunities yet.</strong></p>
+        <p>Create your first opportunity, or load sample data to explore the app.</p>
+        <div class="empty-actions">
+          <button class="btn primary" data-action="new">＋ New opportunity</button>
+          <button class="btn ghost" data-action="sample">Load sample data</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ OPPORTUNITY LIST ============ -->
+    <section id="view-list" class="view" hidden>
+      <div class="toolbar">
+        <input type="search" id="filter-q" class="input search" placeholder="Search customer, project, owner…" aria-label="Search opportunities">
+        <select id="filter-stage" class="input" aria-label="Filter by stage"></select>
+        <select id="filter-priority" class="input" aria-label="Filter by priority"></select>
+        <span class="toolbar-spacer"></span>
+        <button class="btn ghost" id="btn-export-csv" title="Download the filtered list as CSV">Export CSV</button>
+      </div>
+
+      <div class="card table-card">
+        <div class="table-scroll">
+          <table class="opps-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Customer</th>
+                <th>Project</th>
+                <th>Stage</th>
+                <th>Priority</th>
+                <th>Owner</th>
+                <th>Target end</th>
+                <th>Updated</th>
+              </tr>
+            </thead>
+            <tbody id="opps-tbody"></tbody>
+          </table>
+        </div>
+        <div id="list-empty" class="empty-state" hidden>
+          <p><strong>Nothing here.</strong></p>
+          <p>No opportunities match, or none have been created yet.</p>
+          <div class="empty-actions">
+            <button class="btn primary" data-action="new">＋ New opportunity</button>
+            <button class="btn ghost" data-action="sample">Load sample data</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ EDITOR ============ -->
+    <section id="view-editor" class="view" hidden>
+      <div class="editor-head">
+        <button class="btn ghost" id="btn-back">‹ Back</button>
+        <h2 id="editor-title">New opportunity</h2>
+        <span class="toolbar-spacer"></span>
+        <button class="btn danger ghost" id="btn-delete" hidden>Delete</button>
+        <button class="btn ghost" id="btn-cancel">Cancel</button>
+        <button class="btn primary" id="btn-save">Save opportunity</button>
+      </div>
+
+      <nav class="section-nav" aria-label="Form sections">
+        <a href="#sec-customer">Customer</a>
+        <a href="#sec-engagement">Engagement</a>
+        <a href="#sec-scope">Scope</a>
+        <a href="#sec-environment">Environment</a>
+        <a href="#sec-requirements">Requirements</a>
+        <a href="#sec-deliverables">Deliverables</a>
+        <a href="#sec-risks">Risks</a>
+        <a href="#sec-actions">Actions</a>
+        <a href="#sec-meetings">Meetings</a>
+        <a href="#sec-metrics">Success metrics</a>
+      </nav>
+
+      <form id="opp-form" autocomplete="off">
+
+        <fieldset class="card form-card" id="sec-customer">
+          <legend>Customer</legend>
+          <div class="field-grid">
+            <label class="field">
+              <span>Customer name <em>*</em></span>
+              <input class="input" name="customer.name" required>
+            </label>
+            <label class="field">
+              <span>Industry</span>
+              <input class="input" name="customer.industry" list="dl-industry">
+              <datalist id="dl-industry">
+                <option>Financial Services</option><option>Healthcare</option>
+                <option>Manufacturing</option><option>Retail</option>
+                <option>Public Sector</option><option>Education</option>
+                <option>Legal</option><option>Technology</option><option>Logistics</option>
+              </datalist>
+            </label>
+            <label class="field">
+              <span>Region</span>
+              <input class="input" name="customer.region" list="dl-region">
+              <datalist id="dl-region">
+                <option>UK</option><option>EMEA</option><option>Americas</option><option>APAC</option>
+              </datalist>
+            </label>
+            <label class="field">
+              <span>Account owner</span>
+              <input class="input" name="customer.accountOwner">
+            </label>
+            <label class="field">
+              <span>Customer tier</span>
+              <select class="input" name="customer.tier">
+                <option value=""></option>
+                <option>Tier 1 — Strategic</option>
+                <option>Tier 2 — Enterprise</option>
+                <option>Tier 3 — Mid-market</option>
+              </select>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="card form-card" id="sec-engagement">
+          <legend>Engagement</legend>
+          <div class="field-grid">
+            <label class="field">
+              <span>Engagement ID</span>
+              <input class="input mono" name="engagement.id">
+            </label>
+            <label class="field">
+              <span>Project name <em>*</em></span>
+              <input class="input" name="engagement.projectName" required>
+            </label>
+            <label class="field">
+              <span>Stage / status</span>
+              <select class="input" name="engagement.stage" id="input-stage"></select>
+            </label>
+            <label class="field">
+              <span>Priority</span>
+              <select class="input" name="engagement.priority">
+                <option>Medium</option><option>High</option><option>Low</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Start date</span>
+              <input class="input" type="date" name="engagement.startDate">
+            </label>
+            <label class="field">
+              <span>End date</span>
+              <input class="input" type="date" name="engagement.endDate">
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="card form-card" id="sec-scope">
+          <legend>Scope</legend>
+          <div class="field-grid wide">
+            <label class="field span-2">
+              <span>Objectives</span>
+              <textarea class="input" name="scope.objectives" rows="3" placeholder="What the customer wants to achieve"></textarea>
+            </label>
+            <label class="field">
+              <span>In scope</span>
+              <textarea class="input" name="scope.inScope" rows="4"></textarea>
+            </label>
+            <label class="field">
+              <span>Out of scope</span>
+              <textarea class="input" name="scope.outOfScope" rows="4"></textarea>
+            </label>
+            <label class="field">
+              <span>Assumptions</span>
+              <textarea class="input" name="scope.assumptions" rows="3"></textarea>
+            </label>
+            <label class="field">
+              <span>Constraints</span>
+              <textarea class="input" name="scope.constraints" rows="3"></textarea>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="card form-card" id="sec-environment">
+          <legend>Current environment</legend>
+          <div class="field-grid">
+            <label class="field">
+              <span>Device count</span>
+              <input class="input" type="number" min="0" name="environment.deviceCount">
+            </label>
+            <label class="field">
+              <span>OS mix</span>
+              <input class="input" name="environment.osMix" placeholder="e.g. 80% Win 11, 15% macOS, 5% iOS">
+            </label>
+            <label class="field">
+              <span>Existing MDM</span>
+              <input class="input" name="environment.existingMdm" list="dl-mdm">
+              <datalist id="dl-mdm">
+                <option>Microsoft Intune</option><option>ConfigMgr (SCCM)</option>
+                <option>ConfigMgr co-managed</option><option>Jamf Pro</option>
+                <option>Workspace ONE</option><option>Ivanti / MobileIron</option><option>None</option>
+              </datalist>
+            </label>
+            <label class="field">
+              <span>Identity platform</span>
+              <input class="input" name="environment.identityPlatform" list="dl-identity">
+              <datalist id="dl-identity">
+                <option>Entra ID (cloud-only)</option><option>Hybrid — Entra ID + AD</option>
+                <option>On-prem Active Directory</option><option>Okta</option>
+              </datalist>
+            </label>
+            <label class="field span-2">
+              <span>Security stack</span>
+              <input class="input" name="environment.securityStack" placeholder="e.g. Defender for Endpoint, CrowdStrike, Zscaler…">
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="card form-card" id="sec-requirements">
+          <legend>Requirements</legend>
+          <div class="field-grid wide">
+            <label class="field span-2">
+              <span>Business requirements</span>
+              <textarea class="input" name="requirements.business" rows="3"></textarea>
+            </label>
+            <label class="field span-2">
+              <span>Technical requirements</span>
+              <textarea class="input" name="requirements.technical" rows="3"></textarea>
+            </label>
+            <label class="field span-2">
+              <span>Compliance needs</span>
+              <textarea class="input" name="requirements.compliance" rows="3" placeholder="e.g. Cyber Essentials Plus, ISO 27001, NIST"></textarea>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="card form-card" id="sec-deliverables">
+          <legend>Deliverables</legend>
+          <div class="field-grid wide">
+            <label class="field">
+              <span>Planned outputs</span>
+              <textarea class="input" name="deliverables.plannedOutputs" rows="4" placeholder="e.g. Autopilot deployment, compliance baseline"></textarea>
+            </label>
+            <label class="field">
+              <span>Documentation</span>
+              <textarea class="input" name="deliverables.documentation" rows="4" placeholder="e.g. HLD, LLD, runbooks, as-built"></textarea>
+            </label>
+            <label class="field">
+              <span>Workshops</span>
+              <textarea class="input" name="deliverables.workshops" rows="4" placeholder="e.g. discovery workshop, admin handover"></textarea>
+            </label>
+            <label class="field">
+              <span>Migration tasks</span>
+              <textarea class="input" name="deliverables.migrationTasks" rows="4" placeholder="e.g. GPO → Intune policy migration, app packaging"></textarea>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="card form-card" id="sec-risks">
+          <legend>Risks, blockers &amp; dependencies</legend>
+          <div class="repeat-list" id="risk-rows"></div>
+          <button type="button" class="btn ghost add-row" data-add="risk">＋ Add risk</button>
+        </fieldset>
+
+        <fieldset class="card form-card" id="sec-actions">
+          <legend>Actions &amp; next steps</legend>
+          <div class="repeat-list" id="action-rows"></div>
+          <button type="button" class="btn ghost add-row" data-add="action">＋ Add action</button>
+        </fieldset>
+
+        <fieldset class="card form-card" id="sec-meetings">
+          <legend>Meetings</legend>
+          <div class="repeat-list" id="meeting-rows"></div>
+          <button type="button" class="btn ghost add-row" data-add="meeting">＋ Add meeting</button>
+        </fieldset>
+
+        <fieldset class="card form-card" id="sec-metrics">
+          <legend>Success metrics</legend>
+          <div class="field-grid">
+            <label class="field">
+              <span>Adoption %</span>
+              <input class="input" type="number" min="0" max="100" name="metrics.adoptionPct">
+            </label>
+            <label class="field">
+              <span>Compliance %</span>
+              <input class="input" type="number" min="0" max="100" name="metrics.compliancePct">
+            </label>
+            <label class="field">
+              <span>Devices migrated</span>
+              <input class="input" type="number" min="0" name="metrics.devicesMigrated">
+            </label>
+            <label class="field">
+              <span>Satisfaction</span>
+              <select class="input" name="metrics.satisfaction">
+                <option value=""></option>
+                <option>5 — Very high</option><option>4 — High</option>
+                <option>3 — Neutral</option><option>2 — Low</option><option>1 — Very low</option>
+              </select>
+            </label>
+          </div>
+        </fieldset>
+
+      </form>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    Data is stored locally in this browser (localStorage) — use <strong>Export</strong> to back up or share, and <strong>Import</strong> to restore.
+  </footer>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <!-- ============ ROW TEMPLATES ============ -->
+  <template id="tpl-risk">
+    <div class="repeat-row" data-kind="risk">
+      <div class="repeat-grid risk-grid">
+        <label class="field"><span>Type</span>
+          <select class="input" data-f="type"><option>Risk</option><option>Blocker</option><option>Dependency</option></select>
+        </label>
+        <label class="field span-2"><span>Description</span>
+          <input class="input" data-f="description">
+        </label>
+        <label class="field span-2"><span>Mitigation</span>
+          <input class="input" data-f="mitigation">
+        </label>
+        <label class="field"><span>Status</span>
+          <select class="input" data-f="status"><option>Open</option><option>Mitigated</option><option>Closed</option></select>
+        </label>
+      </div>
+      <button type="button" class="btn icon remove-row" title="Remove row" aria-label="Remove row">✕</button>
+    </div>
+  </template>
+
+  <template id="tpl-action">
+    <div class="repeat-row" data-kind="action">
+      <div class="repeat-grid action-grid">
+        <label class="field span-3"><span>Next step</span>
+          <input class="input" data-f="description">
+        </label>
+        <label class="field"><span>Owner</span>
+          <input class="input" data-f="owner">
+        </label>
+        <label class="field"><span>Due date</span>
+          <input class="input" type="date" data-f="dueDate">
+        </label>
+        <label class="field"><span>Status</span>
+          <select class="input" data-f="status"><option>Open</option><option>In progress</option><option>Done</option><option>Blocked</option></select>
+        </label>
+      </div>
+      <button type="button" class="btn icon remove-row" title="Remove row" aria-label="Remove row">✕</button>
+    </div>
+  </template>
+
+  <template id="tpl-meeting">
+    <div class="repeat-row" data-kind="meeting">
+      <div class="repeat-grid meeting-grid">
+        <label class="field"><span>Meeting date</span>
+          <input class="input" type="date" data-f="date">
+        </label>
+        <label class="field span-2"><span>Attendees</span>
+          <input class="input" data-f="attendees">
+        </label>
+        <label class="field span-3"><span>Summary</span>
+          <textarea class="input" rows="2" data-f="summary"></textarea>
+        </label>
+        <label class="field span-3"><span>Decisions</span>
+          <textarea class="input" rows="2" data-f="decisions"></textarea>
+        </label>
+      </div>
+      <button type="button" class="btn icon remove-row" title="Remove row" aria-label="Remove row">✕</button>
+    </div>
+  </template>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
